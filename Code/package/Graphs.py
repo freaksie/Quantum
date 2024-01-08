@@ -25,25 +25,25 @@ class Graphs:
         fig = make_subplots(rows=4, cols=1, shared_xaxes=True)
 
         # Add the original signals as traces
-        trace1 = go.Scatter(x=x, y=y0_I, mode='markers+lines', name='State 0 I')
+        trace1 = go.Scatter(x=x, y=y0_I, mode='lines', name='State 0 I')
         fig.add_trace(trace1, row=1, col=1)
-        trace5 = go.Scatter(x=x, y=mov0_I, mode='markers+lines', name='Moving Average 0 I')
-        fig.add_trace(trace5, row=1, col=1)
+        trace5 = go.Scatter(x=x, y=mov0_I, mode='lines', name='Moving Average 0 I')
+        # fig.add_trace(trace5, row=1, col=1)
 
-        trace2 = go.Scatter(x=x, y=y0_Q, mode='markers+lines', name='State 0 Q')
+        trace2 = go.Scatter(x=x, y=y0_Q, mode='lines', name='State 0 Q')
         fig.add_trace(trace2, row=2, col=1)
-        trace6 = go.Scatter(x=x, y=mov0_Q, mode='markers+lines', name='Moving Average 0 Q')
-        fig.add_trace(trace6, row=2, col=1)
+        trace6 = go.Scatter(x=x, y=mov0_Q, mode='lines', name='Moving Average 0 Q')
+        # fig.add_trace(trace6, row=2, col=1)
 
-        trace3 = go.Scatter(x=x, y=y1_I, mode='markers+lines', name='State 1 I')
+        trace3 = go.Scatter(x=x, y=y1_I, mode='lines', name='State 1 I')
         fig.add_trace(trace3, row=3, col=1)
-        trace7 = go.Scatter(x=x, y=mov1_I, mode='markers+lines', name='Moving Average 1 I')
-        fig.add_trace(trace7, row=3, col=1)
+        trace7 = go.Scatter(x=x, y=mov1_I, mode='lines', name='Moving Average 1 I')
+        # fig.add_trace(trace7, row=3, col=1)
 
-        trace4 = go.Scatter(x=x, y=y1_Q, mode='markers+lines', name='State 1 Q')
+        trace4 = go.Scatter(x=x, y=y1_Q, mode='lines', name='State 1 Q')
         fig.add_trace(trace4, row=4, col=1)
-        trace8 = go.Scatter(x=x, y=mov1_Q, mode='markers+lines', name='Moving Average 1 Q')
-        fig.add_trace(trace8, row=4, col=1)
+        trace8 = go.Scatter(x=x, y=mov1_Q, mode='lines', name='Moving Average 1 Q')
+        # fig.add_trace(trace8, row=4, col=1)
 
         # Set plot layout
         fig.update_layout(
@@ -79,9 +79,9 @@ class Graphs:
         fig = go.Figure(data=frequency_domain, layout=layout)
         return fig
    
-    def getComplexSignal(frequency,st,end,step,phase=0):
+    def getComplexSignal(frequency,amplitude,st,end,step,phase=0,t0=2e-7):
         time=np.arange(st*1e-9, end*1e-9, step*1e-9)
-        rot=np.exp(-1j*((2*np.pi*frequency*time) - phase))
+        rot= amplitude * np.exp(1j * (2 * np.pi * frequency * (time+t0) + phase))
         return rot
 
     def plotSignal(signal, lo,hi,step):
@@ -253,8 +253,9 @@ class Graphs:
             xaxis_title="I",
             yaxis_title="Q",
             showlegend=True,
-            width=800,  # Set the width of the plot
-            height=400,  # Set the height of the plot
+            width=600,  # Set the width of the plot
+            height=600,  # Set the height of the plot
+            # aspectratio=dict(x=1, y=1),
         )
         return fig  
     
