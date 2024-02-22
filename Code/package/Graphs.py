@@ -1,13 +1,20 @@
 import numpy as np
 import pandas as pd
-from scipy.fft import fft, rfft
-from scipy.fft import fftfreq, rfftfreq
+from scipy.fft import  rfft
+from scipy.fft import  rfftfreq
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
-import matplotlib.pyplot as plt
+
 
 class Graphs:
     def plotSignals(shotsMean0_I,shotsMean0_Q,shotsMean1_I,shotsMean1_Q,lo=0,hi=4096,window_size=100,steps=1):
+        '''
+        Takes 4 signals as input and plots interactive graphs
+
+        Parameter
+        ----------
+            shotsMean0_I
+        '''
         x=np.arange(lo*1e-9,hi*1e-9,steps*1e-9)
         y0_I=shotsMean0_I[lo*int(1/steps):hi*int(1/steps)]
         y0_Q=shotsMean0_Q[lo*int(1/steps):hi*int(1/steps)]
@@ -220,7 +227,7 @@ class Graphs:
 
 
     def ewmaComplexSignals(s0,s1,alpha=100):
-        if np.iscomplex(s0).all() and np.iscomplex(s1).all():
+        if 1:
             s0I=pd.DataFrame({'A': np.real(s0)}).ewm(span=alpha).mean().to_numpy().reshape((s0.shape[0]))
             s0Q=pd.DataFrame({'A': np.imag(s0)}).ewm(span=alpha).mean().to_numpy().reshape((s0.shape[0]))
             s1I=pd.DataFrame({'A': np.real(s1)}).ewm(span=alpha).mean().to_numpy().reshape((s1.shape[0]))
@@ -242,6 +249,20 @@ class Graphs:
             return None
     
     def plotCluster(s0I,s0Q,s1I,s1Q):
+        '''
+        Plots the cluster given 4 parameters.
+
+        Parameter
+        ------------
+            * s0I (State0 I) - np array of shape (n) ; n = counts of instances.
+            * s0Q (State0 Q) - np array of shape (n) ; n = counts of instances.
+            * s1I (State1 I) - np array of shape (n) ; n = counts of instances.
+            * s1Q (State1 Q) - np array of shape (n) ; n = counts of instances.
+        
+        Returns
+        ----------
+            fig object
+        '''
         fig = make_subplots(rows=1, cols=1)
         trace0 = go.Scatter(x=s0I, y=s0Q, name='|0>',mode='markers',line=dict(color='blue'), marker=dict(size=6))
         trace1 = go.Scatter(x=s1I, y=s1Q, name='|1>',mode='markers',line=dict(color='red'), marker=dict(size=6))
