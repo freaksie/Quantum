@@ -228,10 +228,10 @@ class Graphs:
 
     def ewmaComplexSignals(s0,s1,alpha=100):
         if 1:
-            s0I=pd.DataFrame({'A': np.real(s0)}).ewm(span=alpha).mean().to_numpy().reshape((s0.shape[0]))
-            s0Q=pd.DataFrame({'A': np.imag(s0)}).ewm(span=alpha).mean().to_numpy().reshape((s0.shape[0]))
-            s1I=pd.DataFrame({'A': np.real(s1)}).ewm(span=alpha).mean().to_numpy().reshape((s1.shape[0]))
-            s1Q=pd.DataFrame({'A': np.imag(s1)}).ewm(span=alpha).mean().to_numpy().reshape((s1.shape[0]))
+            s0I=pd.DataFrame({'A': np.real(s0)}).ewm(alpha=alpha).mean().to_numpy().reshape((s0.shape[0]))
+            s0Q=pd.DataFrame({'A': np.imag(s0)}).ewm(alpha=alpha).mean().to_numpy().reshape((s0.shape[0]))
+            s1I=pd.DataFrame({'A': np.real(s1)}).ewm(alpha=alpha).mean().to_numpy().reshape((s1.shape[0]))
+            s1Q=pd.DataFrame({'A': np.imag(s1)}).ewm(alpha=alpha).mean().to_numpy().reshape((s1.shape[0]))
             return s0I,s0Q,s1I,s1Q 
         else:
             print("Expected complex array")
