@@ -280,3 +280,65 @@ class Graphs:
         )
         return fig  
     
+    def _evaluate_next_depth_signature(dXs, signature):
+        """
+        Evaluate the next depth signature of the input data dXs using the given parameters.
+
+        Args:
+            dXs:      The increment of the input data [trace index, dimension index, time index]
+            signature:  The evaluated signature of the lower depth on input data
+
+        Returns:
+            The next depth signature of the input data
+        """
+        tensor_product = np.einsum("abc,adc->abdc", signature, dXs)
+        tensor_product = tensor_product.reshape(
+            [tensor_product.shape[0], -1, tensor_product.shape[-1]]
+        )
+        sigature_traces = np.cumsum(tensor_product, axis=-1)
+
+        return sigature_traces
+
+
+    def numpy_signature_evaluation(Xs, augmentation_list, rescaling, depth, **kwargs):
+        """
+        Evaluate the signature of the input data Xs using the given parameters.
+
+        Args:
+            Xs:    The input data [trace index, dimension index, time index]
+            augmentation_list: The list of argumentations to use. ["basepoint", "addtime"]
+            rescaling:           Rescaling parameter, ['pre','post']
+            depth:               The depth of the signature to use
+
+        Returns:
+            The signature of the input data
+        """
+
+        dXs = np.diff(Xs, axis=-1)
+
+        if "basepoint" in augmentation_list:
+            initial_point = Xs[:, :, 0:1]
+        else:
+            initial_point = np.zeros_like(Xs[:, :, 0:1])
+
+        dXs = np.concatenate([initial_point, dXs], axis=-1)
+
+        if "addtime" in augmentation_list:
+            dt = np.ones(dXs.shape[-1])
+            dt = dt[None, None, :]
+            dt = np.tile(dt, (dXs.shape[0], 1, 1))
+            dXs = np.concatenate([dXs, dt], axis=-2)
+
+        signatures = []
+
+        current_depth_signature = np.cumsum(dXs, axis=-1)
+        signatures.append(current_depth_signature)
+
+        for _ in range(1, depth):
+            current_depth_signature = Graphs._evaluate_next_depth_signature(
+                dXs, current_depth_signature
+            )
+            signatures.append(current_depth_signature)
+        features = np.concatenate([sig[:, :, -1] for sig in signatures], axis=-1)
+
+        return features
