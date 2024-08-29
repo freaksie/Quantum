@@ -4,6 +4,7 @@ from scipy.fft import  rfft
 from scipy.fft import  rfftfreq
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
+from functools import lru_cache
 
 
 class Graphs:
@@ -278,67 +279,58 @@ class Graphs:
             height=600,  # Set the height of the plot
             # aspectratio=dict(x=1, y=1),
         )
-        return fig  
+        return fig 
+
+    @lru_cache
+    def tensor_dim(width, depth):
+        if width == 1: return depth
+        if depth == 0: return 1
+        if depth == 1: return 1 + width
+        return 1 + width*Graphs.tensor_dim(width, depth-1)
+
+    def ft_sig_mul_scal_div(left, right, width, max_degree, divisor):
+        """
+        left *= right / divisor
+        :param left:
+        :param right:
+        :param width:
+        :param max_degree:
+        :param divisor:
+        :return:
+        """
+        result = np.zeros_like(left)
+        if max_degree >= 1:
+            result[1:1+width] = right/divisor
+        prev_prev_sig_dim = 1
+        prev_sig_dim = 1+width
+        for deg in range(2, max_degree+1):
+            this_sig_dim = Graphs.tensor_dim(width, deg)
+            level_view = left[prev_prev_sig_dim:prev_sig_dim].reshape([width]*(deg-1))
+            result[prev_sig_dim:this_sig_dim] = (np.tensordot(level_view, right, axes=0)/divisor).ravel()
+            prev_prev_sig_dim = prev_sig_dim
+            prev_sig_dim = this_sig_dim
+        return result
+
+    def ft_sig_fmexp(a, dX, width, max_degree):
+        """
+        Single exponential b = a*exp(dX),
+        specialized for the case where dX is a simple vector (degree 1. with a 0 constant term))
+        """
+        b = np.copy(a)
+        for deg in range(1, max_degree+1):
+            b = Graphs.ft_sig_mul_scal_div(b, dX, width, deg, max_degree - deg + 1)
+            b += a
+        return b
+
+    def sig(dXs, max_degree):
+        assert len(dXs.shape) == 2
+        width = dXs.shape[1]
+        result = np.zeros(Graphs.tensor_dim(width, max_degree))
+        result[0] = 1
+        for i in range(dXs.shape[0]):
+            result = Graphs.ft_sig_fmexp(result, dXs[i, :], width, max_degree)
+
+        return result
+
+        
     
-    def _evaluate_next_depth_signature(dXs, signature):
-        """
-        Evaluate the next depth signature of the input data dXs using the given parameters.
-
-        Args:
-            dXs:      The increment of the input data [trace index, dimension index, time index]
-            signature:  The evaluated signature of the lower depth on input data
-
-        Returns:
-            The next depth signature of the input data
-        """
-        tensor_product = np.einsum("abc,adc->abdc", signature, dXs)
-        tensor_product = tensor_product.reshape(
-            [tensor_product.shape[0], -1, tensor_product.shape[-1]]
-        )
-        sigature_traces = np.cumsum(tensor_product, axis=-1)
-
-        return sigature_traces
-
-
-    def numpy_signature_evaluation(Xs, augmentation_list, rescaling, depth, **kwargs):
-        """
-        Evaluate the signature of the input data Xs using the given parameters.
-
-        Args:
-            Xs:    The input data [trace index, dimension index, time index]
-            augmentation_list: The list of argumentations to use. ["basepoint", "addtime"]
-            rescaling:           Rescaling parameter, ['pre','post']
-            depth:               The depth of the signature to use
-
-        Returns:
-            The signature of the input data
-        """
-
-        dXs = np.diff(Xs, axis=-1)
-
-        if "basepoint" in augmentation_list:
-            initial_point = Xs[:, :, 0:1]
-        else:
-            initial_point = np.zeros_like(Xs[:, :, 0:1])
-
-        dXs = np.concatenate([initial_point, dXs], axis=-1)
-
-        if "addtime" in augmentation_list:
-            dt = np.ones(dXs.shape[-1])
-            dt = dt[None, None, :]
-            dt = np.tile(dt, (dXs.shape[0], 1, 1))
-            dXs = np.concatenate([dXs, dt], axis=-2)
-
-        signatures = []
-
-        current_depth_signature = np.cumsum(dXs, axis=-1)
-        signatures.append(current_depth_signature)
-
-        for _ in range(1, depth):
-            current_depth_signature = Graphs._evaluate_next_depth_signature(
-                dXs, current_depth_signature
-            )
-            signatures.append(current_depth_signature)
-        features = np.concatenate([sig[:, :, -1] for sig in signatures], axis=-1)
-
-        return features
